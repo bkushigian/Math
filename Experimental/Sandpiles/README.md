@@ -32,3 +32,6 @@ mentioned, I would like to
   * Better visualizing methods (ie, not just text! Use a GUI. Yuck! I know,
     right? But not all GUIs are disgusting. There are good GUIs too. Maybe when
     you're older...)
+  * Ooooh ooooh ooooooooh!!! Write it in HASKELL with Lazy Evaluation!!!! Dude!
+    Then we can write it on an infinite plane!!!! Come ON, that is fucking
+    awesome!
