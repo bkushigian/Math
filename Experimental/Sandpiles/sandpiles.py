@@ -3,9 +3,36 @@
 from random import randrange
 from time import time
 from nonblockingconsole import NonBlockingConsole as NBC
+from argparse import ArgumentParser
 
-DEFAULT_WIDTH  = 33
-DEFAULT_HEIGHT = 33
+#### FOR ANIMATION
+
+we_have_numpy    = False
+we_have_scipy    = False
+we_have_moviepy  = False
+we_can_animate   = False
+try:
+    import numpy as np
+    we_have_numpy   = True
+    from scipy.ndimage.filters import convolve
+    we_have_scipy   = True
+    import moviepy.editor as mpy
+    we_can_animate  = True
+    we_have_moviepy = True
+    import datetime
+    
+    # Animation Options
+    ANIMATE_PIXEL_COURSENESS = 10     # How many pixels per cell? 10 x 10
+    ANIMATE_TIME_COURSENESS  = 10     # How many topels per frame? 10
+    ANIMATE_FPS              = 20     # Frames Per Second
+    ANIMATE_DURATION         = 20     # How many seconds do we play for?
+    ANIMATE_OUTFILE          = lambda : "sp_{}.mp4".format(str(datetime.datetime.now().date()) + '_' + str(datetime.datetime.now().time()).split('.')[0])
+    START_CONFIG             = 'center10000'
+    WIDTH                    = 250
+    HEIGHT                   = 250
+
+except Exception as e:
+    pass
 
 class Sandpile(object):
     _default_topology = 'table'
@@ -17,7 +44,8 @@ class Sandpile(object):
     _nbc               = NBC()   # Non-blocking console, for interrupting printing
     def __init__(self, start_config = None, width = 17, height = 17, save_history = False, 
                  catastrophe_point = 4, topology = None, sink_config = None,
-                 print_intermediate = None, pretty_print = None):
+                 print_intermediate = None, pretty_print = None,
+                 symmetric_topple = False):
         self.width      = width              # Number of cols
         self.height     = height             # Number of rows
         if height == None:
@@ -26,6 +54,7 @@ class Sandpile(object):
         self.sink       = None
         self.cpoint     = catastrophe_point  # Max num before toppling - 4
         self.topology   = topology           # Topology we are working on
+        self.symmetric_topple = symmetric_topple # Less efficient, but looks better...
         if self.topology == None or self.topology not in self._topologies:
             self.topology = self._default_topology
         if print_intermediate in (True, False):
@@ -159,24 +188,53 @@ class Sandpile(object):
             self.topple_single = func
 
         elif self.topology == 'table':   # Should be working...
-            def func():
-                pile = self.pile
-                updated = False
-                for i in range(self.height):
-                    for j in range(self.width):
-                        if pile[i][j]   >= self.cpoint:
-                            updated = True
-                            if i > 0:
-                                pile[i-1][j] += 1
-                            if i + 1 < self.height:
-                                pile[(i+1) % self.height][j] += 1
-                            if j > 0:
-                                pile[i][j-1] += 1
-                            if j + 1 < self.width:
-                                pile[i][(j+1) % self.width] += 1
-                            pile[i][j] -= 4
-                return updated
+            if self.symmetric_topple:
+                def func():
+                    pile = self.pile
+                    stack = []
+                    for i in range(len(self.pile)):
+                        stack.append([])
+                        for j in range(len(self.pile[0])):
+                            stack[-1].append(0)
 
+                    updated = False
+                    for i in range(self.height):
+                        for j in range(self.width):
+                            if pile[i][j]   >= self.cpoint:
+                                updated = True
+                                if i > 0:
+                                    stack[i-1][j] += 1
+                                if i + 1 < self.height:
+                                    stack[(i+1) % self.height][j] += 1
+                                if j > 0:
+                                    stack[i][j-1] += 1
+                                if j + 1 < self.width:
+                                    stack[i][(j+1) % self.width] += 1
+                                pile[i][j] -= 4
+
+                    for i in range(self.height):
+                        for j in range(self.width):
+                            pile[i][j] += stack[i][j]
+                    return updated
+            else:
+                def func():
+                    pile = self.pile
+                    updated = False
+                    for i in range(self.height):
+                        for j in range(self.width):
+                            if pile[i][j]   >= self.cpoint:
+                                updated = True
+                                if i > 0:
+                                    pile[i-1][j] += 1
+                                if i + 1 < self.height:
+                                    pile[(i+1) % self.height][j] += 1
+                                if j > 0:
+                                    pile[i][j-1] += 1
+                                if j + 1 < self.width:
+                                    pile[i][(j+1) % self.width] += 1
+                                pile[i][j] -= 4
+                    return updated
+                
             self.topple_single = func
             
         elif self.topology == 'projective-plane':
@@ -199,6 +257,46 @@ class Sandpile(object):
         else:
             raise RuntimeError("Invalid topology: '{}'!".format(self.topology))
 
+
+    if we_can_animate:
+        def sandpile_to_npimage(self):
+            """ Converts the sandpile into a RGB image for the final video."""
+                            # B G R
+            coefs = np.array([4,4,4]).reshape((3,1,1))
+            coloredpile = 15 * coefs * self.pile
+            image = coloredpile[::-1].swapaxes(0,2).swapaxes(0,1)
+            return   np.minimum(255,  image)
+
+        def make_frame(self, arg = None):
+            pile_scale = ANIMATE_PIXEL_COURSENESS
+            for i in range(4):
+                self.topple_single()
+            image = self.sandpile_to_npimage()
+            i = 0
+            ss = []
+
+            result = np.zeros( (pile_scale * self.height, pile_scale * self.width, 3), dtype=int) # XXX: Changed
+            for i in range(pile_scale * self.height):
+                for j in range(pile_scale*self.width):
+                    result[i][j] = image[i/pile_scale][j/pile_scale]
+            return result
+
+        def create_animation(self, outfile = None, duration = None):
+            if duration == None:
+                duration = ANIMATE_DURATION
+            if outfile == None or outfile == '':
+                outfile = ANIMATE_OUTFILE()
+
+            animation = mpy.VideoClip(self.make_frame, duration=duration)
+
+            if outfile:
+                animation.write_videofile(outfile, fps=ANIMATE_FPS)
+            return animation
+
+    else:
+        sandpile_to_npimage = None
+        make_frame = None
+
     def topple(self):
         if Sandpile.print_intermediate:
             print self
@@ -214,17 +312,12 @@ class Sandpile(object):
                         return
                 
     def setup(self):
-        self.pile = []
-        self.sink = []
-        for i in range(self.height):
-            self.pile.append([0] * self.width)
-            self.sink.append([0] * self.width)
-
+        self.pile = np.zeros( (self.height, self.width), dtype=int) # XXX: Changed
+        self.sink = np.zeros( (self.height, self.width), dtype=int) # XXX: Changed
         for i in range(self.height):
             for j in range(self.width):
                 self.pile[i][j] = self.start_config(i,j)
                 self.sink[i][j] = self.sink_config(i,j)
-        
 
     def add(self, other):
         if isinstance(other, int):
@@ -391,7 +484,7 @@ class Sandpile(object):
     
 
 
-def main():
+def tests():
     # These can be changed for testing
     # Note that these width/height values drastically increase time to test.
     # Also, they change the thing being created (since this is the size of the
@@ -405,9 +498,7 @@ def main():
 
     start_pile = Sandpile(start_config  = 3,         topology = topology, width = width, height = height)
     center     = Sandpile(start_config = 'center1',  topology = topology, width = width, height = height, pretty_print = True)
-    # s2 = s + center
 
-    # s2.pretty_print = True
     def test1():
         print "BEGINNING TEST 1"
         l = []
@@ -493,10 +584,54 @@ def main():
         s = s1.add(s2)
         s.topple()
         print s
+
+    test2()
     test3()
     test4()
     test5()
     test6()
 
+
+def animate():
+    s = Sandpile(START_CONFIG, width=WIDTH, height=HEIGHT, symmetric_topple = True)
+    s.create_animation(duration = ANIMATE_DURATION)
+
 if __name__ == '__main__':
-    main()
+    parser = ArgumentParser()
+    parser.add_argument("--mode",   type = str, default = 'normal', help = "modes include animate, test, and normal")
+    parser.add_argument("--width",  type = int, default = 250, help = "set width")
+    parser.add_argument("--height", type = int, default = 250, help = "set height")
+    parser.add_argument("--animate-pixel-courseness", type = int, default = 10,  help = "width/height in pixels per cell")
+    parser.add_argument("--animate-time-courseness",  type = int, default = 10, help = "topple iterations per frame")
+    parser.add_argument("--animate-fps",      type = int, default = 20, help = "frames per second for animation")
+    parser.add_argument("--animate-duration", type = int, default = 20, help = "duration in seconds")
+    parser.add_argument("--animate-filename",  type = str, default = '', help = "output file for animation")
+    parser.add_argument("--start-config",  type = str, default = 'center1000', help = "start configuration for sand pile")
+    parser.add_argument("--topology",  type = str, default = 'table', help = "topology we are working on")
+    args = parser.parse_args()
+
+
+    HEIGHT                   = args.height
+    WIDTH                    = args.width
+    if args.mode == 'normal':
+        pass
+    elif args.mode == 'animate':
+        ANIMATE_DURATION = args.animate_duration
+        ANIMATE_FPS      = args.animate_fps
+        ANIMATE_PIXEL_COURSENESS = args.animate_pixel_courseness
+        ANIMATE_TIME_COURSENESS  = args.animate_time_courseness
+        ANIMATE_FILENAME         = args.animate_filename
+        if raw_input("continue with animation? ").lower() in ('y', 'yes'):
+            animate()
+    elif args.mode == 'test':
+        print "mode =", args.mode
+        print 'width =', args.width
+        print 'height =', args.height
+        print 'pixel-courseness =', args.animate_pixel_courseness
+        print 'time-courseness =',  args.animate_time_courseness
+        print 'fps =', args.animate_fps
+        print 'duration =', args.animate_duration
+        print 'outfile =', args.animate_filename
+        raw_input()
+        tests()
+        
