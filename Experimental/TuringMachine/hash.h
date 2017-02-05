@@ -3,6 +3,11 @@
 
 #include <stdint.h>
 
+// 1 MB for hash table default
+// NOTE: the MAGIC_PRIME should be updated with table size
+#define  TABLE_SIZE    0x100000
+#define  MAGIC_PRIME   0xc0001
+
 /* An action consists of:
  *    - Optionally writing an element of our alphabet (0: write, 1: no write, 
  *        8 bits for alphabet, total of 9 bits.
@@ -27,6 +32,7 @@
  * +----------------++----+------------++-----------------+
  */
 typedef uint64_t action_t;
+typedef uint64_t state_t;
 
 /* The hashtable key has 8 least significant bits to store alphabet, remaining
  * 56 most significant bits storing the state. 
@@ -41,9 +47,9 @@ typedef uint64_t Key;
  * to be placed in a hash table bucket.
  * */
 
-typedef struct hashtable_value_node_ {
-  ValueNode* next;   // Next value in the bucket (w/ same hash code)
-  uint64_t   state;  // State to be transfered to - Extra 8 bits of storage here
+typedef struct ht_value_node_ {
+  struct ht_value_node_* next;   // Next value in the bucket (w/ same hash code)
+  state_t    state;  // State to be transfered to - Extra 8 bits of storage here
   action_t   action; // What do we do? This is actually a bit more general than
                      // a strict turing machine, but we have the extra space...
                      // (in particular, our system will pad with extra space, so
@@ -62,7 +68,18 @@ typedef struct hashtable_value_node_ {
  *
  */
 typedef struct hashtable_ {
-  
+  state_t    size;  
+  ValueNode* buckets;
 } HashTable;
 
+/* Some hashy functions */
+uint64_t _hash_key(Key k);   
+int      ht_init(HashTable ht);
+
+/* I'm including two methods to interface with addition of values to the table.
+ * Will restrict to 1 later...*/
+
+int       ht_add_value(Key k, ValueNode v); // TODO: Value or *Value?
+int       ht_add_action_state(Key k, action_t a, uint64_t s);
+ValueNode *new_value(action_t a, uint64_t s);
 #endif
