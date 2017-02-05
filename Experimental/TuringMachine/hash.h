@@ -2,11 +2,13 @@
 #define _BENS_TM_HASH_FUNC
 
 #include <stdint.h>
+#include <stdlib.h>
 
 // 1 MB for hash table default
 // NOTE: the MAGIC_PRIME should be updated with table size
 #define  TABLE_SIZE    0x100000
 #define  MAGIC_PRIME   0xc0001
+#define  STATE_MASK    0xffffff00
 
 /* An action consists of:
  *    - Optionally writing an element of our alphabet (0: write, 1: no write, 
@@ -41,20 +43,31 @@ typedef uint64_t state_t;
  * |      Bits 63 - 8: State Being Mapped From            |Alpha  |
  * +------------------------------------------------------+-------+
  */
-typedef uint64_t Key;    
+typedef uint64_t Key;
 
-/* Hashtable ValueNode stores the state being transfered to, and sets itself up
+/* Hashtable Value stores the state being transfered to, and sets itself up
  * to be placed in a hash table bucket.
- * */
+ */
 
-typedef struct ht_value_node_ {
-  struct ht_value_node_* next;   // Next value in the bucket (w/ same hash code)
+typedef struct ht_value_ {
   state_t    state;  // State to be transfered to - Extra 8 bits of storage here
   action_t   action; // What do we do? This is actually a bit more general than
-                     // a strict turing machine, but we have the extra space...
+                     // a strict Turing Machine, but we have the extra space...
                      // (in particular, our system will pad with extra space, so
-                     // lets use it...)
-} ValueNode;
+                     // lets use it...) We can write up to 4 chars and move 32
+                     // spaces for each write.
+} Value;
+
+Value *new_value(action_t a, state_t s);
+
+/* Key_Value_Pair */
+typedef struct key_value_pair_ {
+  struct key_value_pair_* next;
+  Key key;
+  Value value;
+} KeyValuePair;
+
+KeyValuePair *new_kvp(Key k, Value v);
 
 /*
  * HashTable: Hashes input for the delta function of a TM, namely, its Keys are
@@ -68,18 +81,16 @@ typedef struct ht_value_node_ {
  *
  */
 typedef struct hashtable_ {
-  state_t    size;  
-  ValueNode* buckets;
+  uint64_t       size;  
+  KeyValuePair** buckets;
 } HashTable;
+
+HashTable* new_ht();
+int        ht_init(HashTable *t);
+int        ht_add(HashTable *t, Key k, Value v); 
 
 /* Some hashy functions */
 uint64_t _hash_key(Key k);   
-int      ht_init(HashTable ht);
 
-/* I'm including two methods to interface with addition of values to the table.
- * Will restrict to 1 later...*/
 
-int       ht_add_value(Key k, ValueNode v); // TODO: Value or *Value?
-int       ht_add_action_state(Key k, action_t a, uint64_t s);
-ValueNode *new_value(action_t a, uint64_t s);
 #endif
