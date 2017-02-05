@@ -2,4 +2,4 @@
 *.pyc
 *.log
 tmp/
-*/videos/
+*.mp4
