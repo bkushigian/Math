@@ -3,5 +3,6 @@
 *.log
 tmp/
 *.mp4
+*.o
 
 Experimental/TuringMachine/bin

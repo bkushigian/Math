@@ -10,6 +10,7 @@ int main(){
     collisions[i] = 0;
   }
 
+  /*
   int total_collisions = 0;
   int max_collisions   = 0;
   uint64_t h;
@@ -27,11 +28,11 @@ int main(){
   }
   printf("Total collisions: %d, Max Collisions: %d\n", total_collisions, max_collisions);
   printf("Collisions Percentage: %f%% \n", ((float)total_collisions / (float)TEST_SIZE) * 100);
+  */
+  HashTable *t = new_ht();
+  ht_init(t);
 
-  //HashTable *t = new_ht();
-  //ht_init(t);
-
-  //printf("Hash Table size = %lu\n", t->size);
+  printf("Hash Table size = %lu\n", t->size);
 
 
 }
