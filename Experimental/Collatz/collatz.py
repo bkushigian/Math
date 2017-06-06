@@ -46,10 +46,18 @@ class CollatzFunction:
             yield n
 
     def length(self, n):
-        '''return length of the sequence before reaching 1'''
-        l = 0
+        '''return the number of elements in the orbit'''
+        l = 1
         while n > 1:
             l += 1
             n = self(n)
         return l
+    
+    def lengths(self, lower = 1, upper = 128):
+        lower = max(1, lower)
+        upper = max(lower + 1, upper)
+        return [self.length(i) for i in range(lower, upper)]
+
+    def __getitem__(self, key):
+        return self.sequence(key)
 
