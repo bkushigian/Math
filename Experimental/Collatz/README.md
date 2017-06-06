@@ -33,6 +33,11 @@ ahead of time. Thus we can run the following code:
 
 which outputs:
     
-    5 16 8 4 2 1
+    5 
+    16 
+    8 
+    4 
+    2 
+    1
 
 
