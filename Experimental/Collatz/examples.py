@@ -3,7 +3,7 @@ from utils import ffs
 
 C = Collatz()
 def print_sequence(n):
-    for k in C.sequence(n):
+    for k in C.orbit(n):
         print(k)
     
 def print_ffs_after_increase(n):
@@ -23,8 +23,8 @@ def print_ffs_after_increase(n):
 if __name__ == '__main__':
     while True:
         selection = input(
-'''(1) print sequence
-(2) print sequence with trailing zeros info
+'''(1) print orbit
+(2) print orbit with trailing zeros info
 ''')
         try:
             selection = int(selection)

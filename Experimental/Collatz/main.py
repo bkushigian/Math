@@ -1,57 +1,110 @@
 #!/usr/bin/python3
-import argparse # For parsing arguments to dictate program flow
 try:
     import matplotlib as mpl
     import matplotlib.pyplot as plt
 except:
     print("Couldn't import matplotlib")
+    from sys import exit
+    exit(1)
 
 from collatz import Collatz # Short for CollatzFunction
 
 if __name__ == '__main__':
-    op = 5
-    if op == 1:
-        c = Collatz()
-        data = c.lengths(1, 10000)
-        plt.plot(data, 'r.')
+    from sys import argv
+    import argparse # For parsing arguments to dictate program flow
+
+    # Setup marker for display
+    marker_dict = {'small'          : ',', 
+                   'pixel'          : ',', 
+                   'medium'         : '.', 
+                   'point'          : '.', 
+                   'large'          : 'o',
+                   'circle'         : 'o', 
+                   'triangle_down'  : 'v', 
+                   'triangle_up'    : '^', 
+                   'triangle_left'  : '<', 
+                   'triangle_right' : '>',
+                   'tri_down'       : '1', 
+                   'tri_up'         : '2', 
+                   'tri_left'       : '3', 
+                   'tri_right'      : '4',
+                   'octagon'        : '8', 
+                   'square'         : 's', 
+                   'pentagon'       : 'p', 
+                   'plus-filled'    : 'P',
+                   'hexagon1'       : 'h', 
+                   'hexagon2'       : 'H',
+                   'hexagon1'       : 'h', 
+                   'hexagon2'       : 'H',
+                   'plus'           : '+',
+                   'x'              : 'x',
+                   'X'              : 'X',
+                   'Diamond'        : 'D',
+                   'diamond'        : 'd',
+                   'thin_diamond'   : 'd',
+                   'vline'          : '|',
+                   'hline'          : '-'
+                }
+    parser = argparse.ArgumentParser(description = 'Play around with Collatz')
+
+    parser.add_argument('--mode', '-m', default = 'plot-lengths', 
+                        choices = ['plot-length-batch', 'plot-orbit', 
+                                   'plot-evens', 'plot-comprehension'],
+                        help = 'what action should we run?')
+    parser.add_argument('--seed', default = '(2**32 - 1)', type = str, 
+                        help = 'value or comma-separated values to run')
+    parser.add_argument('--range', default = 800, type = int, 
+                        help = 'number of values to experiment on')
+    parser.add_argument('--scale', default = 'linear', 
+                        choices = ['log', 'linear', 'logit'],
+                        help = 'log or linear axes scaling')
+    parser.add_argument('--collatz-add', default = 1, 
+                        help = 'additive term in the collatz equation')
+    parser.add_argument('--collatz-mult', default = 3,
+                        help = 'multiplicative term in the collatz equation')
+    parser.add_argument('--comprehension', dest='comprehension_seed',
+                        default = '3**k - 1 for k in range(args.range)', 
+                        help = 'literal python code to go into a list comprehension.')
+    parser.add_argument('--marker-shape', default = 'medium', 
+                        choices = marker_dict.keys(),
+                        help = 'size/shape of marker; small, medium, large and MORE!')
+    parser.add_argument('--marker-color', default = 'r', help = 'color of marker')
+    args = parser.parse_args()
+
+    marker = marker_dict['point']
+    if args.marker_shape in marker_dict:
+        marker = marker_dict[args.marker_shape]
+    marker_string = args.marker_color + marker
+
+    exec('seed = {}'.format(args.seed))
+    c = Collatz(add = args.collatz_add, mult = args.collatz_mult)
+
+    if args.mode == 'plot-lengths':
+        data = c.length(range(1, args.range))
+        plt.plot(data, marker_string)
         plt.ylabel('termination time')
         plt.xlabel('start value')
+        plt.yscale(args.scale)
         plt.show()
 
-    elif op == 2:
-        c = Collatz()
-        # seed = 11239012322
-        seed = 2**32 - 1
+    elif args.mode == 'plot-orbit':
         data = list(c[seed])
-        plt.plot(data, 'r.')
+        plt.plot(data, marker_string)
         plt.ylabel('value at current iteration')
         plt.xlabel('ith iteration of collatz on seed value {}'.format(seed))
-        plt.yscale('log')
+        plt.yscale(args.scale)
         plt.show()
 
-    elif op == 3:
-        c = Collatz()
-        seed = 12345678
+    elif args.mode == 'plot-evens':
         data = list(c.evens(seed))
-        plt.plot(data, 'r.')
+        plt.plot(data, marker_string)
         plt.ylabel('number of iterations on ith cascade')
         plt.xlabel('ith cascade for seed value {}'.format(seed))
-        #plt.yscale('log')
+        plt.yscale(args.scale)
         plt.show()
 
-    elif op == 4:
-        c = Collatz()
-        # seed = 11239012322
-        seed = 2**32 - 1
-        data = list(c[seed])
-        plt.plot(data, 'r.')
-        plt.ylabel('value at current iteration')
-        plt.xlabel('ith iteration of collatz on seed value {}'.format(seed))
-        #plt.yscale('log')
-        plt.show()
-    elif op == 5:
-        c = Collatz()
-        seeds = [3**k - 1 for k in range(800)]
+    elif args.mode == 'plot-comprehension':
+        exec('seeds = [{}]'.format(args.comprehension_seed))
         data = c.length(seeds)
-        plt.plot(data, 'r.')
+        plt.plot(data, marker_string)
         plt.show()

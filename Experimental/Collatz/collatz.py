@@ -6,19 +6,21 @@ class CollatzFunction:
     An instance of CollatzFunction computes the next number in a CollatzFunction
     sequence given a starting value. This can be accessed as follows:
 
-        c = CollatzFunction()
+        c = Collatz()    # Collatz is short for CollatzFunction and is defined
+                         # near EOF
         c(4)   # returns 2
         c(5)   # returns 16
+        c[5]   # returns [5, 16, 8, 4, 2, 1]
 
-    Additionally this includes a method get_orbit that generates the _infinite_
-    orbit:
+    Additionally this includes a method sequence that generates the _infinite_
+    sequence:
 
-        orbit = c.orbit(32):
-        for i in orbit:
+        sequence = c.sequence(32):
+        for i in sequence:
             print(i)
         # Prints 32, 16, 8, 4, 2, 1, 4, 2, 1, 4, 2, 1, ...
 
-    Finally, there is a sequence method that is exactly the same as orbit() but
+    Finally, there is a orbit method that is exactly the same as sequence() but
     terminates at 1.
     '''
 
@@ -41,36 +43,36 @@ class CollatzFunction:
         return self.mult * n + self.add
         
 
-    def sequence(self, n):
+    def orbit(self, ns):
         try:
-            return [self._sequence(k) for k in n]
+            return [self._orbit(k) for k in ns]
         except:
-            return self._sequence(n)
-
-    def _sequence(self, n):
-        yield n
-        while n != 1:
-            n = self.__call__(n)
-            yield n
-
-    def orbit(self, n):
-        try:
-            return [self._orbit(k) for k in n]
-        except:
-            return self._orbit(n)
+            return self._orbit(ns)
 
     def _orbit(self, n):
         yield n
-        while True:
-            n = self.__call__(n)
+        while n != 1:
+            n = self(n)
             yield n
 
-    def length(self, n):
+    def sequence(self, ns):
+        try:
+            return [self._sequence(k) for k in ns]
+        except:
+            return self._sequence(ns)
+
+    def _sequence(self, n):
+        yield n
+        while True:
+            n = self(n)
+            yield n
+
+    def length(self, ns):
         '''return the number of elements in the orbit'''
         try:
-            return [self._length(k) for k in n]
+            return [self._length(k) for k in ns]
         except:
-            return self._length(n)
+            return self._length(ns)
 
     def _length(self, n):
         l = 1
@@ -80,6 +82,8 @@ class CollatzFunction:
         return l
     
     def lengths(self, lower = 1, upper = 128):
+        # XXX: This has been deprecated. Please use length(range(100))
+        print("[!] WARNING: lengths is deprecated")
         lower = max(1, lower)
         upper = max(lower + 1, upper)
         return [self.length(i) for i in range(lower, upper)]
@@ -120,6 +124,6 @@ class CollatzFunction:
         return result
         
     def __getitem__(self, key):
-        return self.sequence(key)
+        return self.orbit(key)
 
 Collatz = CollatzFunction       # A shortcut
