@@ -48,27 +48,31 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description = 'Play around with Collatz')
 
     parser.add_argument('--mode', '-m', default = 'plot-lengths', 
-                        choices = ['plot-length-batch', 'plot-orbit', 
+                        choices = ['plot-lengths', 'plot-orbit', 
                                    'plot-evens', 'plot-comprehension'],
                         help = 'what action should we run?')
-    parser.add_argument('--seed', default = '(2**32 - 1)', type = str, 
+    parser.add_argument('--seed', '-s', 
+                        default = '(2**32 - 1)', type = str, 
                         help = 'value or comma-separated values to run')
-    parser.add_argument('--range', default = 800, type = int, 
+    parser.add_argument('--range', '-r', 
+                        default = 800, type = int, 
                         help = 'number of values to experiment on')
-    parser.add_argument('--scale', default = 'linear', 
+    parser.add_argument('--scale', '-S', 
+                        default = 'linear', 
                         choices = ['log', 'linear', 'logit'],
                         help = 'log or linear axes scaling')
-    parser.add_argument('--collatz-add', default = 1, 
-                        help = 'additive term in the collatz equation')
+    parser.add_argument('--collatz-add', 
+                        default = 1, help = 'additive term in the collatz equation')
     parser.add_argument('--collatz-mult', default = 3,
                         help = 'multiplicative term in the collatz equation')
-    parser.add_argument('--comprehension', dest='comprehension_seed',
+    parser.add_argument('--comprehension', '-C', dest='comprehension_seed',
                         default = '3**k - 1 for k in range(args.range)', 
                         help = 'literal python code to go into a list comprehension.')
-    parser.add_argument('--marker-shape', default = 'medium', 
+    parser.add_argument('--shape', '-H', default = 'medium', dest = 'marker_shape',
                         choices = marker_dict.keys(),
                         help = 'size/shape of marker; small, medium, large and MORE!')
-    parser.add_argument('--marker-color', default = 'r', help = 'color of marker')
+    parser.add_argument('--color', '-c', default = 'r', dest = 'marker_color',
+                        help = 'color of marker')
     args = parser.parse_args()
 
     marker = marker_dict['point']
